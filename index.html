@@ -1,0 +1,663 @@
+import React, { useState } from 'react';
+import { 
+  Compass, 
+  Sparkles, 
+  Heart, 
+  RefreshCw, 
+  ArrowRight, 
+  Award, 
+  Smile, 
+  Activity, 
+  CheckCircle2, 
+  AlertCircle, 
+  BookOpen, 
+  HelpCircle,
+  MapPin
+} from 'lucide-react';
+
+// 情緒象限資料定義
+const quadrants = {
+  red: {
+    name: '紅區 (Red Zone)',
+    desc: '高度活力 ✕ 低度愉悅',
+    color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700',
+    headerColor: 'bg-red-500',
+    lightBg: 'bg-red-50',
+    emoji: '😡/😰',
+    focus: '憤怒、緊張、焦慮',
+    words: ['憤怒', '驚慌失措', '壓力很大', '緊張不安', '震驚', '暴怒', '怒氣沖沖', '沮喪', '神經緊繃', '錯愕', '火冒三丈', '受到驚嚇', '生氣', '緊張', '坐立難安', '焦慮', '憂慮不安', '擔心', '被激怒', '被惹惱', '反感', '困擾', '在意', '忐忑不安', '不太高興'],
+    careTip: '此時你的身體心跳加快、肌肉緊繃。試著做 3 次慢速深呼吸，喝一口溫水，讓身體先放鬆下來喔！'
+  },
+  yellow: {
+    name: '黃區 (Yellow Zone)',
+    desc: '高度活力 ✕ 高度愉悅',
+    color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-700',
+    headerColor: 'bg-yellow-500',
+    lightBg: 'bg-yellow-50',
+    emoji: '🤩/🥳',
+    focus: '興奮、快樂、有動力',
+    words: ['驚喜', '振奮', '歡慶', '心花怒放', '欣喜若狂', '亢奮', '愉悅', '有動力', '受到啟發', '興高采烈', '精力充沛', '生氣勃勃', '興奮', '樂觀', '熱情洋溢', '開心', '集中', '快樂', '驕傲', '興奮激勵', '令人愉快', '欣喜', '有希望', '好玩', '幸福'],
+    careTip: '你現在充滿了正能量！可以用這股活力去學習新事物，或者把喜悅分享給身邊的朋友，讓身體保持動態健康！'
+  },
+  blue: {
+    name: '藍區 (Blue Zone)',
+    desc: '低度活力 ✕ 低度愉悅',
+    color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700',
+    headerColor: 'bg-blue-500',
+    lightBg: 'bg-blue-50',
+    emoji: '😢/😞',
+    focus: '難過、疲累、無聊',
+    words: ['厭惡', '死氣沈沈', '失望', '低落', '提不起勁', '悲觀', '鬱鬱寡歡', '洩氣', '難過', '無聊', '疏離', '悲慘', '孤單', '心灰意冷', '疲累', '消沈', '絕望', '抑鬱', '無望', '悶悶不樂', '孤寂', '精疲力盡', '疲憊不堪', '疲勞', '被榨乾'],
+    careTip: '當身體覺得疲倦、心情低落時，可以適度休息、抱抱布偶、或閉上眼睛趴著休息 5 分鐘。容許自己有哭泣與休息的權利！'
+  },
+  green: {
+    name: '綠區 (Green Zone)',
+    desc: '低度活力 ✕ 高度愉悅',
+    color: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700',
+    headerColor: 'bg-green-500',
+    lightBg: 'bg-green-50',
+    emoji: '😌/🥰',
+    focus: '平靜、放鬆、知足',
+    words: ['自在', '隨和', '知足', '充滿愛', '心滿意足', '平靜', '安全', '滿意', '滿懷感謝', '感動', '放鬆', '冷靜', '寧靜', '有福氣', '平衡', '柔和', '周到', '平和', '舒服', '無憂無慮', '昏昏欲睡', '自鳴得意', '平靜', '舒適', '安詳'],
+    careTip: '這是一個非常適合學習、閱讀與深度思考的狀態。你的身體感覺很平靜，可以伸個懶腰，享受這個溫暖舒服的時刻。'
+  }
+};
+
+// 題目設計 (10題)
+const questions = [
+  {
+    id: 1,
+    question: "明天要在全班面前上台朗讀，小強覺得「緊張不安、坐立難安」，這屬於哪一個情緒區塊？",
+    options: [
+      { text: "🔴 紅色區塊（高活力、低愉悅）", isCorrect: true, rationale: "沒錯！緊張與坐立難安屬於高活力、但不太高興的『紅區』。這時候心跳可能會變快喔！" },
+      { text: "🟡 黃色區塊（高活力、高愉悅）", isCorrect: false, rationale: "不對喔，黃色區塊是讓人感到開心與興奮的，而緊張是比較不好受的低愉悅感覺。" },
+      { text: "🔵 藍色區塊（低活力、低愉悅）", isCorrect: false, rationale: "雖然是不好受的感覺，但緊張時身體是緊繃、充滿高能量活力的，因此不屬於低活力的藍區。" },
+      { text: "🟢 綠色區塊（低活力、高愉悅）", isCorrect: false, rationale: "綠色區塊是放鬆、平靜的，跟緊張不安的感覺完全相反喔！" }
+    ],
+    hint: "想一想，『緊張』時，心跳是變快還是變慢？心情是高興還是不舒服呢？"
+  },
+  {
+    id: 2,
+    question: "下課時，你和最要好的朋友一起在樹下聊天，覺得「放鬆、平靜、舒服」，這屬於哪一個區塊？",
+    options: [
+      { text: "🔴 紅色區塊", isCorrect: false, rationale: "紅色區塊通常是憤怒或焦慮等高活力、低愉悅的情緒，不符合放鬆的狀態。" },
+      { text: "🟡 黃色區塊", isCorrect: false, rationale: "黃色區塊的能量非常高，而平靜放鬆是屬於低活力、很舒服的狀態喔。" },
+      { text: "🔵 藍色區塊", isCorrect: false, rationale: "藍色區塊代表的是傷心或提不起勁，此時雖然活力低，但愉悅度是很低的，而平靜放鬆是很愉悅的。" },
+      { text: "🟢 綠色區塊（低活力、高愉悅）", isCorrect: true, rationale: "答對了！『平靜、放鬆』是低活力、高度愉悅的『綠區』。這是一個對學習與大腦思考最棒的狀態！" }
+    ],
+    hint: "這種感覺就像是躺在舒服的草地上吹著微風，不累也不急，心情很愉快。"
+  },
+  {
+    id: 3,
+    question: "期末考得到進步獎，大家為你「歡慶」，你感到「心花怒放、驕傲、熱情洋溢」，這是哪一個區塊？",
+    options: [
+      { text: "🔴 紅色區塊", isCorrect: false, rationale: "紅色區塊是生氣與焦慮，不會有『心花怒放』的快樂感喔。" },
+      { text: "🟡 黃色區塊（高活力、高愉悅）", isCorrect: true, rationale: "太棒了！『心花怒放、歡慶』是充滿活力且非常愉悅的『黃區』。這時候會很想笑、很有精神！" },
+      { text: "🔵 藍色區塊", isCorrect: false, rationale: "藍色區塊是沮喪和失望，跟得獎歡慶的氛圍相反。" },
+      { text: "🟢 綠色區塊", isCorrect: false, rationale: "綠色區塊雖然愉快，但活力度較低，而得獎歡慶是全身充滿活力、甚至想跳起來的！" }
+    ],
+    hint: "這種狀態下，你覺得身體很有力量，心情超級好，甚至想大聲歡呼！"
+  },
+  {
+    id: 4,
+    question: "下雨天不能出去玩，只能待在教室，小明覺得「無聊、提不起勁、死氣沈沈」，這是哪一個區塊？",
+    options: [
+      { text: "🔴 紅色區塊", isCorrect: false, rationale: "紅色是生氣或著急，而無聊、提不起勁是能量非常低的表現。" },
+      { text: "🟡 黃色區塊", isCorrect: false, rationale: "黃色區塊是好玩與充滿希望的，而無聊代表愉悅度與活力都很低。" },
+      { text: "🔵 藍色區塊（低活力、低愉悅）", isCorrect: true, rationale: "答對了！『無聊、提不起勁』屬於低活力、低愉悅的『藍區』。這時候可以閉眼休息或動動手指來轉換心情。" },
+      { text: "🟢 綠色區塊", isCorrect: false, rationale: "綠色區塊是放鬆與滿意，雖然活力低，但心情是好的；無聊時心情是不太美麗的。" }
+    ],
+    hint: "身體感覺重重的、沒力氣，而且覺得沒什麼有趣的事，屬於什麼顏色呢？"
+  },
+  {
+    id: 5,
+    question: "當我們因為被同學誤會而覺得「火冒三丈、被惹惱（紅色區塊）」時，為了做「身體最棒的主人」，哪種做法最健康？",
+    options: [
+      { text: "大聲尖叫並用力搥桌子，宣洩憤怒", isCorrect: false, rationale: "雖然生氣是正常的，但用力搥桌子可能會讓手受傷，也不利於理性解決問題。" },
+      { text: "深深吸一口氣吸飽，再慢慢吐出來，重複三次", isCorrect: true, rationale: "非常正確！深呼吸可以告訴大腦『現在安全了』，讓心跳變慢，避免身體因為生氣而過度緊繃受傷！" },
+      { text: "憋氣直到自己不生氣為止", isCorrect: false, rationale: "憋氣會讓身體缺氧、心跳更亂，對身體是不健康的喔。" },
+      { text: "把氣憋在心裡，假裝什麼事情都沒發生", isCorrect: false, rationale: "把不好的情緒累積在體內，會讓肚子和頭覺得悶悶痛痛的，不算是珍惜身體的做法。" }
+    ],
+    hint: "珍惜獨一無二的身體，要用不傷害自己、又能放鬆大腦神經的方式來平靜。"
+  },
+  {
+    id: 6,
+    question: "體育課跑完 800 公尺，下午上課覺得「疲憊不堪、精疲力盡（藍色區塊）」，這時候怎麼愛護身體？",
+    options: [
+      { text: "強迫自己繼續跑跳，藉此提神", isCorrect: false, rationale: "當身體已經發出疲勞訊號，強迫運動容易受傷，不符合愛護身體的原則。" },
+      { text: "喝一杯溫水，閉上眼睛趴著休息 10 分鐘", isCorrect: true, rationale: "賓果！精疲力盡是身體需要充電的訊號。溫水可以補充水分，趴著休息能讓緊繃的肌肉獲得修復。" },
+      { text: "吃很多糖果零食來提神", isCorrect: false, rationale: "太多的糖分雖然能帶來短暫興奮，但隨後會讓身體更疲倦，也會加重身體的負擔。" },
+      { text: "抱怨同學和老師為什麼要上體育課", isCorrect: false, rationale: "抱怨無法消除身體的肉體疲勞，我們需要直接給予身體溫和的休息與水分。" }
+    ],
+    hint: "當手機沒電時要充電，當我們的身體精疲力盡時，最需要的是什麼呢？"
+  },
+  {
+    id: 7,
+    question: "小華在美勞課做出了自己非常滿意的作品，感到「欣喜、充滿希望、幸福」，這屬於哪一個區塊？",
+    options: [
+      { text: "🔴 紅色區塊", isCorrect: false, rationale: "紅區代表不舒服的負面高能量，例如生氣和焦慮，與幸福感無關。" },
+      { text: "🟡 黃色區塊（高活力、高愉悅）", isCorrect: true, rationale: "答對了！感到有希望、幸福、欣喜是屬於『黃區』，這會讓我們身體神采奕奕！" },
+      { text: "🔵 藍色區塊", isCorrect: false, rationale: "藍區是悲傷與失望的區塊，不符合幸福和有希望的心情。" },
+      { text: "🟢 綠色區塊", isCorrect: false, rationale: "綠色區塊是偏向寧靜和放鬆，雖然也很好，但『充滿希望和欣喜』通常能量更高，落在黃色區塊更貼切！" }
+    ],
+    hint: "這種情緒會讓你眼睛發亮、很有前進的動力！"
+  },
+  {
+    id: 8,
+    question: "老師突然宣布要「抽籤口試」，你發現自己心跳砰砰響，手有點發抖，這時你可能處於哪個區塊？要怎麼辦？",
+    options: [
+      { text: "處於藍色區塊，應該大哭一場", isCorrect: false, rationale: "手發抖、心跳快代表身體能量極高，這是紅區（緊張焦慮）的特徵，而不是藍區（低落無力）。" },
+      { text: "處於綠色區塊，應該繼續睡覺", isCorrect: false, rationale: "綠色區塊是放鬆寧靜，心跳砰砰響和發抖絕對不是綠色區塊喔。" },
+      { text: "處於紅色區塊，可以輕輕拍拍胸口，對自己說『我可以的』", isCorrect: true, rationale: "非常優秀！這是紅區的「緊張不安」。拍拍胸口能安撫自主神經，正向對話能提升安全感，保護我們的心臟與大腦。" },
+      { text: "處於黃色區塊，應該大聲歡呼", isCorrect: false, rationale: "雖然都是高能量，但手抖、心跳過快往往伴隨著低愉悅的焦慮，所以是紅區而不是黃區。" }
+    ],
+    hint: "心跳砰砰響是身體在『準備面對挑戰』的警報，這屬於高能量、低愉悅的顏色。"
+  },
+  {
+    id: 9,
+    question: "我們要做「自己身體最棒的主人」，認識情緒的主要目的是什麼？",
+    options: [
+      { text: "為了讓自己永遠只停留在黃色區塊，不准生氣或難過", isCorrect: false, rationale: "每個人都會有紅區或藍區的時候，這是正常的。我們無法『永遠不生氣』，但可以學會調適。" },
+      { text: "為了在生氣時可以理直氣壯地罵人", isCorrect: false, rationale: "認識情緒是為了保護自己、不傷害別人，罵人會傷害人際關係，也不是愛護身體的表現。" },
+      { text: "為了不理會身體的警訊，假裝自己很健康", isCorrect: false, rationale: "身體的緊繃、疲累都是情緒的警訊，不理會它們會讓身體生病。" },
+      { text: "認識不同區塊，學會在不同情緒下用健康的方法照顧和愛護身體", isCorrect: true, rationale: "太讚了！不論在哪個區塊，都是獨一無二的自己。認識它們，才能在紅區時冷靜、藍區時休息、黃綠區時享受！" }
+    ],
+    hint: "還記得 PDF 第五頁寫的：『讓我們一起好好珍惜和愛護自己獨一無二的身體吧！』"
+  },
+  {
+    id: 10,
+    question: "快放學了，整理完書包，坐在座位上等待鐘聲，覺得「知足、自鳴得意、安祥」，這是哪一個區塊？",
+    options: [
+      { text: "🔴 紅色區塊", isCorrect: false, rationale: "紅區充滿了焦躁與火氣，與知足安祥的平靜感相反。" },
+      { text: "🟡 黃色區塊", isCorrect: false, rationale: "黃區能量很高，像是中樂透一樣興奮；而等放學的知足感是比較安靜的。" },
+      { text: "🔵 藍色區塊", isCorrect: false, rationale: "藍區是傷心落寞，等放學的心情通常是滿愉快的，所以不是藍區。" },
+      { text: "🟢 綠色區塊（低活力、高愉悅）", isCorrect: true, rationale: "答對了！這種安心、滿足又帶點放鬆的感覺，正是完美的『綠色區塊』。祝你有個美好的放學時光！" }
+    ],
+    hint: "這種感覺微甜、暖洋洋的，身體很放鬆，準備回家洗熱水澡、吃晚餐。"
+  }
+];
+
+export default function App() {
+  const [gameState, setGameState] = useState('start'); // start, playing, end, dashboard
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  
+  // 儀盤互動狀態
+  const [dashboardX, setDashboardX] = useState(50); // 愉悅度 (0-100)
+  const [dashboardY, setDashboardY] = useState(50); // 活力度 (0-100)
+  const [detectedQuadrant, setDetectedQuadrant] = useState('green');
+  const [randomWord, setRandomWord] = useState('自在');
+
+  // 開始遊戲
+  const startGame = () => {
+    setGameState('playing');
+    setCurrentIdx(0);
+    setScore(0);
+    setSelectedOption(null);
+    setHasAnswered(false);
+    setShowHint(false);
+  };
+
+  // 答題處理
+  const handleOptionClick = (option, idx) => {
+    if (hasAnswered) return;
+    setSelectedOption(idx);
+    setHasAnswered(true);
+    if (option.isCorrect) {
+      setScore(prev => prev + 1);
+    }
+  };
+
+  // 下一題
+  const nextQuestion = () => {
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx(prev => prev + 1);
+      setSelectedOption(null);
+      setHasAnswered(false);
+      setShowHint(false);
+    } else {
+      setGameState('end');
+    }
+  };
+
+  // 點擊儀盤
+  const handleDashboardClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = (1 - (e.clientY - rect.top) / rect.height) * 100; // y軸反轉，上方為高能量
+    
+    setDashboardX(Math.round(x));
+    setDashboardY(Math.round(y));
+
+    // 判斷象限
+    let quad = 'green';
+    if (x >= 50 && y >= 50) quad = 'yellow';
+    else if (x < 50 && y >= 50) quad = 'red';
+    else if (x < 50 && y < 50) quad = 'blue';
+    else quad = 'green';
+
+    setDetectedQuadrant(quad);
+    
+    // 隨機抽選一個情緒詞彙
+    const wordsList = quadrants[quad].words;
+    const randWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+    setRandomWord(randWord);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col justify-between selection:bg-indigo-200">
+      
+      {/* 導覽列 */}
+      <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+              <Compass className="w-6 h-6 animate-spin-slow" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
+                情緒能量探險隊
+              </h1>
+              <p className="text-xs text-slate-400 font-medium">國小四年級情緒教育小遊戲</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setGameState('dashboard')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1 ${gameState === 'dashboard' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <Activity className="w-4 h-4" /> 今日儀盤
+            </button>
+            <button 
+              onClick={() => setGameState('start')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-1 ${gameState === 'start' || gameState === 'playing' || gameState === 'end' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <Smile className="w-4 h-4" /> 能量挑戰
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* 主要內容區 */}
+      <main className="max-w-4xl w-full mx-auto px-4 py-6 flex-grow flex flex-col justify-center">
+        
+        {/* 1. 開始畫面 */}
+        {gameState === 'start' && (
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center space-y-8 max-w-2xl mx-auto transform transition-all hover:scale-[1.01]">
+            <div className="relative inline-block">
+              <span className="absolute -top-3 -right-3 text-4xl animate-bounce">✨</span>
+              <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 via-pink-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg rotate-3">
+                <Heart className="w-12 h-12 text-white animate-pulse" />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="inline-block bg-indigo-50 text-indigo-700 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+                健康小達人必玩 👍
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-800">
+                成為自己身體最棒的主人！
+              </h2>
+              <p className="text-slate-500 max-w-md mx-auto leading-relaxed">
+                哈囉！獨一無二的你。你知道我們身體每天都裝著不同的「情緒能量」嗎？讓我們透過這個好玩的遊戲，一起認識紅、黃、藍、綠四大情緒區塊，學習最棒的身體照顧妙招吧！
+              </p>
+            </div>
+
+            {/* 四象限小預覽 */}
+            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto text-xs font-semibold">
+              <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-700 flex items-center justify-between">
+                <span>🔴 紅區：生氣、緊張</span>
+                <span className="text-sm">高活/低愉</span>
+              </div>
+              <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-yellow-700 flex items-center justify-between">
+                <span>🟡 黃區：興奮、開心</span>
+                <span className="text-sm">高活/高愉</span>
+              </div>
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-700 flex items-center justify-between">
+                <span>🔵 藍區：疲累、傷心</span>
+                <span className="text-sm">低活/低愉</span>
+              </div>
+              <div className="p-3 bg-green-50 border border-green-100 rounded-xl text-green-700 flex items-center justify-between">
+                <span>🟢 綠區：平靜、舒服</span>
+                <span className="text-sm">低活/高愉</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <button
+                onClick={startGame}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-4 rounded-2xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 text-lg group"
+              >
+                開始冒險挑戰
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => setGameState('dashboard')}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-8 py-4 rounded-2xl transition-all flex items-center justify-center gap-2 text-lg"
+              >
+                測量今日情緒
+                <Activity className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2. 答題挑戰 */}
+        {gameState === 'playing' && (
+          <div className="space-y-6 max-w-2xl mx-auto w-full">
+            {/* 進度條 */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg text-sm">
+                  Q{questions[currentIdx].id}
+                </span>
+                <span className="text-xs text-slate-400 font-medium">情緒能量挑戰賽</span>
+              </div>
+              <div className="flex-1 mx-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-600 transition-all duration-300"
+                  style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-xs font-bold text-slate-500">
+                {currentIdx + 1} / {questions.length}
+              </span>
+            </div>
+
+            {/* 問題卡片 */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-100 space-y-6">
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-800 leading-snug">
+                {questions[currentIdx].question}
+              </h3>
+
+              {/* 答案選項 */}
+              <div className="grid grid-cols-1 gap-3">
+                {questions[currentIdx].options.map((option, idx) => {
+                  let btnStyle = "border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30 text-slate-700";
+                  let icon = null;
+
+                  if (hasAnswered) {
+                    if (option.isCorrect) {
+                      btnStyle = "border-green-300 bg-green-50 text-green-800";
+                      icon = <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />;
+                    } else if (selectedOption === idx) {
+                      btnStyle = "border-red-300 bg-red-50 text-red-800";
+                      icon = <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />;
+                    } else {
+                      btnStyle = "border-slate-100 bg-slate-50 text-slate-400 opacity-60";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      disabled={hasAnswered}
+                      onClick={() => handleOptionClick(option, idx)}
+                      className={`w-full p-4 rounded-xl border text-left font-semibold transition-all flex items-center justify-between text-base leading-relaxed ${btnStyle}`}
+                    >
+                      <span>{option.text}</span>
+                      {icon}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 答案解析與說明 */}
+              {hasAnswered && (
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  questions[currentIdx].options[selectedOption].isCorrect 
+                    ? 'bg-green-50/50 border-green-200 text-green-800' 
+                    : 'bg-red-50/50 border-red-200 text-red-800'
+                }`}>
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-xl mt-0.5">
+                      {questions[currentIdx].options[selectedOption].isCorrect ? '🎉' : '💡'}
+                    </span>
+                    <div>
+                      <h4 className="font-bold text-sm mb-1">
+                        {questions[currentIdx].options[selectedOption].isCorrect ? '答對了！太厲害了！' : '別灰心，學到了新知識！'}
+                      </h4>
+                      <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
+                        {questions[currentIdx].options[selectedOption].rationale}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 功能按鈕區：求助提示 & 下一步 */}
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setShowHint(!showHint)}
+                  disabled={hasAnswered}
+                  className={`text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1 ${
+                    hasAnswered 
+                      ? 'text-slate-300 cursor-not-allowed' 
+                      : 'text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  <HelpCircle className="w-4 h-4" /> {showHint ? "隱藏提示" : "求助提示"}
+                </button>
+
+                {hasAnswered && (
+                  <button
+                    onClick={nextQuestion}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-1 text-sm shadow-md"
+                  >
+                    {currentIdx === questions.length - 1 ? "看挑戰結果" : "下一題"}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* 提示對話框 */}
+              {!hasAnswered && showHint && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-xs sm:text-sm leading-relaxed animate-fade-in">
+                  <strong>💡 探險小秘訣：</strong> {questions[currentIdx].hint}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 3. 結束畫面 */}
+        {gameState === 'end' && (
+          <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center space-y-8 max-w-lg mx-auto">
+            <div className="w-20 h-20 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto shadow-inner animate-pulse">
+              <Award className="w-12 h-12" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-3xl font-extrabold text-slate-800">
+                探險挑戰成功！
+              </h2>
+              <p className="text-slate-500 font-medium">
+                恭喜你完成了 10 題「情緒能量」大考驗
+              </p>
+            </div>
+
+            {/* 成績顯示 */}
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+              <div>
+                <span className="text-xs text-slate-400 font-bold block uppercase tracking-wide">答對題數</span>
+                <span className="text-5xl font-black text-indigo-600">{score}</span>
+                <span className="text-xl text-slate-400 font-bold"> / {questions.length}</span>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                {score >= 8 ? (
+                  <span>🏆 <strong>「超級健康情緒小達人」！</strong><br />你對自己的身體與情緒掌握度極高，非常懂得珍惜和愛護自己，就像是個情緒魔法師！</span>
+                ) : score >= 5 ? (
+                  <span>🌟 <strong>「情緒探險家」！</strong><br />你表現得很棒！能清楚辨識不同的情緒狀態，繼續練習，你會更得心應手喔！</span>
+                ) : (
+                  <span>🌱 <strong>「情緒新兵」！</strong><br />沒關係，學習是一場好玩的旅程。多跟家人老師聊聊情緒，你也會成為很棒的身體主人！</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={startGame}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-1 text-sm"
+              >
+                <RefreshCw className="w-4 h-4" /> 再挑戰一次
+              </button>
+              <button
+                onClick={() => setGameState('dashboard')}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3.5 rounded-xl transition-all flex items-center justify-center gap-1 text-sm"
+              >
+                <Activity className="w-4 h-4" /> 體驗情緒儀盤
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 4. 今日情緒儀盤互動區 */}
+        {gameState === 'dashboard' && (
+          <div className="space-y-6 max-w-3xl mx-auto w-full">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-indigo-600 font-bold">
+                  <Compass className="w-5 h-5 animate-spin-slow" />
+                  <span>互動情緒儀盤 (Mood Meter)</span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">測量你今天的身體與心情能量！</h2>
+                <p className="text-xs text-slate-400">
+                  在右側或下方的四色圖表中隨意點選一個點，找出對應的情緒，並看看如何照顧身體吧！
+                </p>
+              </div>
+              <button 
+                onClick={startGame}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md shrink-0 flex items-center justify-center gap-1 self-start md:self-auto"
+              >
+                <Smile className="w-4 h-4" /> 前往知識挑戰賽
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+              {/* 左側/上方：情緒儀盤點擊區 */}
+              <div className="md:col-span-7 bg-white p-6 rounded-3xl shadow-md border border-slate-100 flex flex-col items-center">
+                <div className="flex justify-between w-full text-xs font-bold text-slate-500 mb-2 px-1">
+                  <span>← 低度愉悅 (不舒服)</span>
+                  <span>高度愉悅 (舒服) →</span>
+                </div>
+
+                <div className="relative w-full aspect-square max-w-[340px] border-2 border-slate-300 rounded-2xl overflow-hidden shadow-inner cursor-pointer" onClick={handleDashboardClick}>
+                  {/* 四個象限底色 */}
+                  <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+                    <div className="bg-red-200 border-r border-b border-white flex flex-col justify-between p-3 text-red-800">
+                      <span className="text-xs font-black">🔴 紅區</span>
+                      <span className="text-[10px] opacity-75">高活力 / 低愉悅</span>
+                    </div>
+                    <div className="bg-yellow-200 border-l border-b border-white flex flex-col justify-between p-3 text-yellow-800 text-right">
+                      <span className="text-xs font-black">🟡 黃區</span>
+                      <span className="text-[10px] opacity-75">高活力 / 高愉悅</span>
+                    </div>
+                    <div className="bg-blue-200 border-r border-t border-white flex flex-col justify-between p-3 text-blue-800">
+                      <span className="text-[10px] opacity-75">低活力 / 低愉悅</span>
+                      <span className="text-xs font-black">🔵 藍區</span>
+                    </div>
+                    <div className="bg-green-200 border-l border-t border-white flex flex-col justify-between p-3 text-green-800 text-right">
+                      <span className="text-[10px] opacity-75">低活力 / 高愉悅</span>
+                      <span className="text-xs font-black">🟢 綠區</span>
+                    </div>
+                  </div>
+
+                  {/* 軸線標示 */}
+                  <div className="absolute inset-x-0 top-1/2 h-0.5 bg-slate-400 opacity-60"></div>
+                  <div className="absolute inset-y-0 left-1/2 w-0.5 bg-slate-400 opacity-60"></div>
+
+                  {/* 軸線箭頭與文字 */}
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-white px-1.5 py-0.5 rounded shadow text-slate-500 flex items-center gap-0.5">
+                    高活力 (高能量) ↑
+                  </div>
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-white px-1.5 py-0.5 rounded shadow text-slate-500 flex items-center gap-0.5">
+                    低活力 (低能量) ↓
+                  </div>
+
+                  {/* 當前點選位置紅點 */}
+                  <div 
+                    className="absolute w-6 h-6 -ml-3 -mt-3 bg-indigo-600 border-2 border-white rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-300"
+                    style={{ left: `${dashboardX}%`, top: `${100 - dashboardY}%` }}
+                  >
+                    <MapPin className="w-3.5 h-3.5 fill-white text-indigo-600" />
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 mt-3 font-semibold text-center">
+                  點擊上圖中任何一處，看看落在什麼情緒區塊吧！
+                </p>
+              </div>
+
+              {/* 右側/下方：檢測報告 */}
+              <div className="md:col-span-5 flex flex-col justify-between gap-4">
+                <div className="bg-white p-6 rounded-3xl shadow-md border border-slate-100 flex-grow flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <span className="text-xs font-extrabold text-indigo-500 uppercase tracking-widest block">檢測分析報告</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{quadrants[detectedQuadrant].emoji}</span>
+                      <h3 className="text-xl font-black text-slate-800">
+                        目前狀態：{quadrants[detectedQuadrant].name}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-500 font-semibold bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 inline-block">
+                      能量特徵：{quadrants[detectedQuadrant].desc}
+                    </p>
+                  </div>
+
+                  {/* 詞彙推薦 */}
+                  <div className="p-4 rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/20 text-center space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-500 block uppercase">精準情緒詞聯想（隨機推薦）</span>
+                    <span className="text-2xl font-black text-indigo-700 tracking-wide block py-1 animate-pulse">
+                      【 {randomWord} 】
+                    </span>
+                    <p className="text-[10px] text-slate-400 leading-relaxed px-2">
+                      PDF中本區塊的情緒還包含：{quadrants[detectedQuadrant].words.slice(0, 5).join('、')} 等共 {quadrants[detectedQuadrant].words.length} 個情緒。
+                    </p>
+                  </div>
+
+                  {/* 身體愛護小撇步 */}
+                  <div className="space-y-1.5">
+                    <h4 className="text-xs font-extrabold text-slate-700 flex items-center gap-1">
+                      <Heart className="w-4 h-4 text-pink-500 fill-pink-500" /> 愛護自己身體妙招：
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium bg-pink-50/30 p-3 rounded-xl border border-pink-100">
+                      {quadrants[detectedQuadrant].careTip}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 底部小卡：宣導身體主人 */}
+                <div className="bg-gradient-to-r from-teal-500 to-indigo-600 text-white p-4 rounded-2xl shadow-md">
+                  <h4 className="text-xs font-extrabold flex items-center gap-1 mb-1">
+                    <BookOpen className="w-4 h-4" /> 身體主人小宣言：
+                  </h4>
+                  <p className="text-[11px] leading-relaxed opacity-90 font-medium">
+                    「讓我們一起好好珍惜和愛護自己獨一無二的身體吧！認識部位功能，做自己身體最棒的主人！」— 摘自 PDF 第 5 頁
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* 頁尾 */}
+      <footer className="bg-white border-t border-slate-100 py-4 mt-8">
+        <div className="max-w-4xl mx-auto px-4 text-center space-y-1">
+          <p className="text-xs text-slate-400 font-semibold">
+            💖 情緒能量探險隊 © 2026 國小四年級健康與體育教育
+          </p>
+          <p className="text-[10px] text-slate-300">
+            本教具根據國小情緒儀盤教材製作，旨在培養兒童情緒辨識與身體自愛能力。
+          </p>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
